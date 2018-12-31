@@ -1,0 +1,13 @@
+ctrl-h: open/close help
+escape: save and exit
+ctrl-space: autocomplete
+ctrl-s: save
+ctrl-v: paste
+ctrl-z: undo
+ctrl-u: undo
+ctrl-y: redo
+ctrl-k: delete line
+ctrl-p: toggle terminal mode
+tab: indent
+shift-tab: unindent
+tab (in terminal mode): history
