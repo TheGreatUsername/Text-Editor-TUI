@@ -1,7 +1,8 @@
-ctrl-h: open/close help
+ctrl-q: open/close help
 escape: save and exit
 ctrl-space: autocomplete
 ctrl-s: save
+ctrl-x: cut line
 ctrl-v: paste
 ctrl-z: undo
 ctrl-u: undo

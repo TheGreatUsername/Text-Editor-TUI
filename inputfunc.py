@@ -13,7 +13,7 @@ def doinput(self, curses):
         elif self.key == curses.KEY_DOWN : downfunc(self)
         elif self.key == curses.KEY_LEFT : leftfunc(self)
         elif self.key == curses.KEY_RIGHT : rightfunc(self)
-        elif self.key == 127 : backfunc(self)
+        elif self.key in [curses.KEY_BACKSPACE, 127] : backfunc(self)
         elif self.ck == '\n' : enterfunc(self)
         elif self.ck == '(' : parenfunc(self)
         elif self.ck == '[' : squarebracketfunc(self)
@@ -21,7 +21,7 @@ def doinput(self, curses):
         elif self.ck == '"' : quotefunc(self)
         elif self.ck == "'" : apostrophefunc(self)
         elif self.ck == '\t' : tabfunc(self)
-        elif self.key == 353 : shifttabfunc(self)
+        elif self.key == curses.KEY_BTAB : shifttabfunc(self)
         elif self.key == 0 : ctrlspacefunc(self)
         elif self.key == 22 : ctrlvfunc(self)
         elif self.key in [21, 26] : ctrlufunc(self)
@@ -30,7 +30,9 @@ def doinput(self, curses):
         elif self.key == 11 : ctrlkfunc(self)
         elif self.key == 19 : ctrlsfunc(self)
         elif self.key == 16 : ctrlpfunc(self)
-        elif self.key == 263 : ctrlhfunc(self)
+        elif self.key == 17 : ctrlqfunc(self)
+        elif self.key == 24 : ctrlxfunc(self)
+        elif 1 <= self.key <= 26 : pass #skip unused ctrl bindings
         elif self.key == 27 : pass
         else:defaultfunc(self)
     elif self.mode == 'terminal':
