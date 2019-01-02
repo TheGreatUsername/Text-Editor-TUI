@@ -32,6 +32,8 @@ def doinput(self, curses):
         elif self.key == 16 : ctrlpfunc(self)
         elif self.key == 17 : ctrlqfunc(self)
         elif self.key == 24 : ctrlxfunc(self)
+        elif self.key == 29 : ctrlrbfunc(self)
+        elif self.key == 28 : ctrlbsfunc(self)
         elif 1 <= self.key <= 26 : pass #skip unused ctrl bindings
         elif self.key == 27 : pass
         else:defaultfunc(self)
@@ -120,7 +122,7 @@ def doinput(self, curses):
         if len(self.acwords) == 0 : self.acwords = [self.acword]
         self.acwords = self.acwords[:self.edith]
 
-    if not self.key in [curses.KEY_UP, curses.KEY_DOWN,
+    if self.mode == 'edit' and not self.key in [curses.KEY_UP, curses.KEY_DOWN,
                         curses.KEY_LEFT, curses.KEY_RIGHT]:
         self.undoq.append(ministate(self.lines, self.cx, self.cy))
         while len(self.undoq) > 30 : self.undoq.pop(0)

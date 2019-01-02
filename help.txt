@@ -9,6 +9,8 @@ ctrl-u: undo
 ctrl-y: redo
 ctrl-k: delete line
 ctrl-p: toggle terminal mode
+ctrl-]: page up
+ctrl-\: page down
 tab: indent
 shift-tab: unindent
 tab (in terminal mode): history

@@ -33,7 +33,8 @@ class editor:
         self.message = 'Welcome! Press ctrl-q for help'
         self.showkeycodes = False
 
-        self.helplines = open('help.txt').read().split('\n')
+        helppath = os.path.join(os.path.dirname(__file__), 'help.txt')
+        self.helplines = open(helppath).read().split('\n')
         self.ishelpon = False
 
         self.undoq = [inputfunc.ministate(self.lines, self.cx, self.cy)]
@@ -42,7 +43,9 @@ class editor:
         #handle highlighting
         l = re.findall('(.+?)(\.[^\.]+$|$)', self.filename)
         extension = '' if len(l) == 0 else l[-1][-1][1:]
-        self.highlight = filetext('highlight_{}.txt'.format(extension)).split('\n')
+        highlightpath = os.path.join(os.path.dirname(__file__),
+                                  'highlight_{}.txt'.format(extension))
+        self.highlight = filetext(highlightpath).split('\n')
 
         #autocompletion stuff
         self.isautocomp = False
@@ -102,10 +105,11 @@ class editor:
         #autocomplete 
         if self.isautocomp:
             l = self.acwords
+            if self.acword in l : l.remove(self.acword)
             if self.aci < 0 : self.aci = 0
             elif self.aci >= len(l) : self.aci = len(l) - 1
             x = self.cx - 1
-            line = self.lines[py]
+            line = self.lines[self.cy]
             if x >= len(line) : x = len(line) - 1
             while x >= 0 and line[x].isalpha() : x -= 1
             x += 1
