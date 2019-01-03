@@ -20,6 +20,7 @@ def doinput(self, curses):
         elif self.ck == '{' : bracketfunc(self)
         elif self.ck == '"' : quotefunc(self)
         elif self.ck == "'" : apostrophefunc(self)
+        elif self.ck in [')', ']', '}', "'", '"'] : rightparenfunc(self)
         elif self.ck == '\t' : tabfunc(self)
         elif self.key == curses.KEY_BTAB : shifttabfunc(self)
         elif self.key == 0 : ctrlspacefunc(self)
@@ -34,6 +35,7 @@ def doinput(self, curses):
         elif self.key == 24 : ctrlxfunc(self)
         elif self.key == 29 : ctrlrbfunc(self)
         elif self.key == 28 : ctrlbsfunc(self)
+        elif self.key == 3 : ctrlcfunc(self)
         elif 1 <= self.key <= 26 : pass #skip unused ctrl bindings
         elif self.key == 27 : pass
         else:defaultfunc(self)
@@ -108,12 +110,12 @@ def doinput(self, curses):
     x = self.cx - 1
     if x < 0 : x = 0
     if x >= len(l) : x = len(l) - 1
-    while x >= 0 and l[x].isalpha() : x -= 1
+    while x >= 0 and isalnum(l[x]) : x -= 1
     x += 1
     x1 = x
     x = self.cx
     if x >= len(l) : x = len(l) - 1
-    while x >= 0 and x < len(l) and l[x].isalpha() : x += 1
+    while x >= 0 and x < len(l) and isalnum(l[x]) : x += 1
     x2 = x
     self.acword = l[x1:x2]
     self.acwordx = x1
@@ -141,3 +143,6 @@ class ministate:
         self.lines = lines[:]
         self.cx = cx
         self.cy = cy
+
+def isalnum(s):
+    return re.match('[_a-zA-Z][_a-zA-Z0-9]*', s)

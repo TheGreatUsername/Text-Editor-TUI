@@ -1,5 +1,6 @@
 import os
 import subprocess
+import textwrap
 
 class terminal:
     def __init__(self):
@@ -33,5 +34,10 @@ class terminal:
         self.s = ''
         self.cx = 0
         return result
-    def getlines(self):
-        return self.record.split('\n')
+    def getlines(self, w):
+        sp = self.record.split('\n')
+        result = []
+        for s in sp:
+            for t in textwrap.fill(s, w).split('\n'):
+                result.append(t)
+        return result

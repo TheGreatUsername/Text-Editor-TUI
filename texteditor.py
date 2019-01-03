@@ -83,7 +83,9 @@ class editor:
                 found = [m.start() for m in re.finditer('\\b{}\\b'.format(h),
                                                         line)]
                 for f in found:
-                    self.scr.addstr(i, lnlen + f, h, curses.color_pair(9))
+                    x = lnlen + f - self.sx
+                    if x >= 0:
+                        self.scr.addstr(i, x, h, curses.color_pair(9))
             self.scr.addstr(i+1, lnlen, ' ', curses.color_pair(1))
             ln = str(self.sy + i + 1)
             #draw line numbers
@@ -105,13 +107,13 @@ class editor:
         #autocomplete 
         if self.isautocomp:
             l = self.acwords
-            if self.acword in l : l.remove(self.acword)
+            if len(l) > 1 and self.acword in l : l.remove(self.acword)
             if self.aci < 0 : self.aci = 0
             elif self.aci >= len(l) : self.aci = len(l) - 1
             x = self.cx - 1
             line = self.lines[self.cy]
             if x >= len(line) : x = len(line) - 1
-            while x >= 0 and line[x].isalpha() : x -= 1
+            while x >= 0 and isalnum(line[x]): x -= 1
             x += 1
             maxc = 0
             for s in l:
@@ -127,7 +129,7 @@ class editor:
         if self.mode == 'terminal':
             h = int(self.edith / 2)
             t = self.terminal
-            l = t.getlines()
+            l = t.getlines(self.scrw - 1)
             l += [''] * h
             li = len(l) - h * 2
             if t.sy < 0 : t.sy = 0
@@ -136,8 +138,10 @@ class editor:
             if li < 0 : li = 0
             for i in range(h):
                 self.scr.addstr(h - 1 + i, 0, spacebuf(l[li + i], self.scrw)[:self.scrw], curses.color_pair(6))
-            self.scr.addstr(self.scrh - 2, 0, spacebuf(t.pref + t.s, self.scrw)[:self.scrw], curses.color_pair(6))
-            self.scr.addstr(self.scrh - 2, t.cx + len(t.pref), (t.s + ' ')[t.cx], curses.color_pair(7))
+            self.scr.addstr(self.scrh - 2, 0, spacebuf((t.pref + t.s)[:self.scrw], self.scrw)[:self.scrw], curses.color_pair(6))
+            x = t.cx + len(t.pref)
+            if x >= self.scrw : x = self.scrw - 1
+            self.scr.addstr(self.scrh - 2, x, (t.s + ' ')[t.cx], curses.color_pair(7))
 
         #help display
         if self.ishelpon:
@@ -147,7 +151,8 @@ class editor:
             for i in range(len(self.helplines)):
                 if i >= self.scrh - 1 : break
                 l = self.helplines[i]
-                self.scr.addstr(i, self.scrw - maxlen, spacebuf(l, maxlen), curses.color_pair(7))
+                self.scr.addstr(i, self.scrw - maxlen, spacebuf(l, maxlen),
+                                curses.color_pair(6))
 
         #message banner
         m = spacebuf(self.message, self.scrw)[:self.scrw-1]
@@ -159,6 +164,9 @@ class editor:
             self.scr.addstr(0, 0, '{} {}'.format(self.ck, self.key), curses.color_pair(4))
 
 def spacebuf(s, n) : return s + ' ' * (n - len(s)) if n > len(s) else s
+
+def isalnum(s):
+    return re.match('[_a-zA-Z][_a-zA-Z0-9]*', s)
 
 def filetext(filename):
     if not os.path.isfile(filename) : open(filename, 'a').close()
@@ -172,15 +180,17 @@ def debug(s):
 def draw(scr):
     curses.raw() #disable certain keybindings
     #set up colors
-    curses.init_pair(1, 0, 7)
-    curses.init_pair(2, 4, 7)
+    curses.use_default_colors()
+    white = -1
+    curses.init_pair(1, 0, white)
+    curses.init_pair(2, 4, white)
     curses.init_pair(3, 0, 2)
     curses.init_pair(4, 7, 0)
-    curses.init_pair(5, 6, 7)
-    curses.init_pair(6, 2, 0)
-    curses.init_pair(7, 0, 2)
-    curses.init_pair(8, 6, 0) 
-    curses.init_pair(9, 5, 7) 
+    curses.init_pair(5, 6, white)
+    curses.init_pair(6, 4, 7)
+    curses.init_pair(7, 7, 4)
+    curses.init_pair(8, 6, 7) 
+    curses.init_pair(9, 5, white) 
     scr.erase()
     scr.refresh()
     height, width = scr.getmaxyx()
