@@ -1,1 +1,0 @@
-Run texteditor.py to start the application
