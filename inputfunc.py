@@ -36,9 +36,13 @@ def doinput(self, curses):
         elif self.key == 29 : ctrlrbfunc(self)
         elif self.key == 28 : ctrlbsfunc(self)
         elif self.key == 3 : ctrlcfunc(self)
+        elif self.key == 12 : ctrllfunc(self)
+        elif self.key == 6 : ctrlffunc(self)
+        elif self.key == 1 : ctrlafunc(self)
         elif 1 <= self.key <= 26 : pass #skip unused ctrl bindings
+        elif self.key == 410 : pass
         elif self.key == 27 : pass
-        else:defaultfunc(self)
+        else : defaultfunc(self)
     elif self.mode == 'terminal':
         t = self.terminal
         if self.key == 16 : ctrlpfunc(self)
@@ -62,26 +66,57 @@ def doinput(self, curses):
             if t.cx > 0:
                 t.s = t.s[:t.cx-1] + t.s[t.cx:]
                 t.cx -= 1
-        elif self.key == 263 : ctrlhfunc(self)
+        #elif self.key == 263 : ctrlhfunc(self)
+        elif self.key == 6:
+            ctrlffunc(self)
+        elif self.key == 3:
+            t.kill()
+        elif self.key >= 1 and self.key <= 26 : pass
+        elif self.key == 410 : pass
         else:
             t.s = t.s[:t.cx] + self.ck + t.s[t.cx:]
             t.cx += 1
         if not self.ck in ['\t'] and not self.key in [curses.KEY_UP, curses.KEY_DOWN,
                         curses.KEY_LEFT, curses.KEY_RIGHT]: t.hi = -1
+    elif self.mode == 'fileselect':
+        if self.key == curses.KEY_UP:
+            self.fi -= 1
+            if self.fi < 0 : self.fi = 0
+        elif self.key == curses.KEY_DOWN:
+            self.fi += 1
+            if self.fi > len(self.filecol): self.fi = len(self.filecol)            
+        elif self.ck == '\n':
+            if self.fi < len(self.filecol):
+                self.changefile(self.filecol[self.fi])
+            else : self.mode = 'newfilename'
+        elif self.key == curses.KEY_RIGHT:
+            if self.filecol[-1] != self.filelist[-1]:
+                ind = self.filelist.index(self.filecol[-1]) + 1
+                if ind < len(self.filelist):
+                    self.filecol = self.filelist[ind:ind+self.edith-3]
+            if self.fi > len(self.filecol): self.fi = len(self.filecol)
+        elif self.key == curses.KEY_LEFT:
+            if self.filecol[0] != self.filelist[0]:
+                ind = self.filelist.index(self.filecol[0])
+                self.filecol = self.filelist[ind-self.edith+3:ind]
+        elif self.key == 16 : ctrlpfunc(self)
+        elif self.key == 6 : self.mode = 'edit'
+    elif self.mode == 'newfilename':
+        if self.key in [curses.KEY_BACKSPACE, 127]:
+            if len(self.newfname) > 0: self.newfname = self.newfname[:-1]
+        elif self.ck == '\n':
+            if len(self.newfname) > 0: self.changefile(self.newfname)
+            else:
+                self.newfname = ''
+                self.mode = 'edit'
+        elif self.key == 6 : self.mode = 'edit'
+        else:
+            self.newfname += self.ck
     else : int('a') #if this is ever called something went wrong
 
     if not self.key in [21, 26, 25] : self.redoq = []
 
-    #make carot behave
-    if self.cx < 0 : self.cx = 0
-    if self.cy < 0 : self.cy = 0
-    if self.cy >= len(self.lines) : self.cy = len(self.lines) - 1
-
-    #scroll screen
-    if self.cx < self.sx : self.sx = self.cx
-    if self.cy < self.sy : self.sy = self.cy
-    if self.cx > self.sx + self.editw - 1 : self.sx = self.cx - (self.editw-1)
-    if self.cy > self.sy + self.edith - 2 : self.sy = self.cy - (self.edith-2)
+    self.adjustcoords()
 
     if not self.isautocomp : self.aci = 0
     oldacword = self.acword
@@ -107,18 +142,19 @@ def doinput(self, curses):
     self.linewords = re.findall('[_a-zA-Z][_a-zA-Z0-9]*', self.lines[self.cy])
 
     #get word to autocomplete and fill autocomplete menu
-    x = self.cx - 1
-    if x < 0 : x = 0
-    if x >= len(l) : x = len(l) - 1
-    while x >= 0 and isalnum(l[x]) : x -= 1
-    x += 1
-    x1 = x
-    x = self.cx
-    if x >= len(l) : x = len(l) - 1
-    while x >= 0 and x < len(l) and isalnum(l[x]) : x += 1
-    x2 = x
-    self.acword = l[x1:x2]
-    self.acwordx = x1
+    if self.isautocomp:
+        x = self.cx - 1
+        if x < 0 : x = 0
+        if x >= len(l) : x = len(l) - 1
+        while x >= 0 and isalnum(l[x]) : x -= 1
+        x += 1
+        x1 = x
+        x = self.cx
+        if x >= len(l) : x = len(l) - 1
+        while x >= 0 and x < len(l) and isalnum(l[x]) : x += 1
+        x2 = x
+        self.acword = l[x1:x2]
+        self.acwordx = x1
     if self.isautocomp:
         self.acwords = [s for s in self.lastwords if s.startswith(self.acword)]
         if len(self.acwords) == 0 : self.acwords = [self.acword]

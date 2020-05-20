@@ -1,4 +1,6 @@
 import tkinter
+import subprocess
+import os
 
 def upfunc(self):
     if self.isautocomp : self.aci -= 1
@@ -13,12 +15,12 @@ def downfunc(self):
         else : self.cy += 1
         
 def leftfunc(self):
-    if self.cx == 0 and self.cy >= 1:
+    l = len(self.lines[self.cy])
+    if (self.cx == 0 or l == 0) and self.cy >= 1:
         self.cy -= 1
         self.cx = len(self.lines[self.cy])
     else:
         self.cx -= 1
-        l = len(self.lines[self.cy])
         if self.cx >= l : self.cx = l - 1
         
 def rightfunc(self):
@@ -29,11 +31,12 @@ def rightfunc(self):
         self.cy += 1
         
 def backfunc(self):
-    if self.cx > 0:
+    if self.cx > 0 and len(self.lines[self.cy]) > 0:
         l = self.lines[self.cy]
+        if self.cx > len(l) : self.cx = len(l)
         self.lines[self.cy] = l[:self.cx-1] + l[self.cx:]
         self.cx -= 1
-    elif self.cx == 0 and self.cy > 0:
+    elif (self.cx == 0 or len(self.lines[self.cy]) == 0) and self.cy > 0:
         self.cx = len(self.lines[self.cy - 1])
         self.lines[self.cy - 1] += self.lines[self.cy]
         self.lines.pop(self.cy)
@@ -57,9 +60,14 @@ def enterfunc(self):
             if not l[i].isspace() or i >= self.cx: break
             else : ind += l[i]
         nind = ind
-        if self.cx > 0 and self.cx <= len(l) and l[self.cx-1] in [':', '{'] : nind += ' ' * 4
+        limcx = self.cx
+        if limcx > len(l) : limcx = len(l)
+        canrb = False
+        if limcx > 0 and l[limcx-1] in [':', '{']:
+            nind += ' ' * 4
+            canrb = True
         self.lines[self.cy] = l[:self.cx]
-        if self.cx < len(l) and l[self.cx] == '}':
+        if canrb and self.cx < len(l) and l[self.cx] == '}':
             self.lines.insert(self.cy + 1, ind + l[self.cx:])
             l = l[:self.cx]
         self.lines.insert(self.cy + 1, nind + l[self.cx:])
@@ -68,28 +76,37 @@ def enterfunc(self):
         
 def parenfunc(self):
     l = self.lines[self.cy]
+    if self.cx > len(l) : self.cx = len(l)
     self.lines[self.cy] = l[:self.cx] + self.ck + ')' + l[self.cx:]
     self.cx += 1
     
 def squarebracketfunc(self):
     l = self.lines[self.cy]
+    if self.cx > len(l) : self.cx = len(l)
     self.lines[self.cy] = l[:self.cx] + self.ck + ']' + l[self.cx:]
     self.cx += 1
     
 def bracketfunc(self):
     l = self.lines[self.cy]
+    if self.cx > len(l) : self.cx = len(l)
     self.lines[self.cy] = l[:self.cx] + self.ck + '}' + l[self.cx:]
     self.cx += 1
     
 def quotefunc(self):
     l = self.lines[self.cy]
-    self.lines[self.cy] = l[:self.cx] + self.ck + '"' + l[self.cx:]
-    self.cx += 1
-    
+    if self.cx < len(l) and l[self.cx] == '"': self.cx += 1
+    else:
+        if self.cx > len(l) : self.cx = len(l)
+        self.lines[self.cy] = l[:self.cx] + self.ck + '"' + l[self.cx:]
+        self.cx += 1
+        
 def apostrophefunc(self):
     l = self.lines[self.cy]
-    self.lines[self.cy] = l[:self.cx] + self.ck + "'" + l[self.cx:]
-    self.cx += 1
+    if self.cx < len(l) and l[self.cx] == "'": self.cx += 1
+    else:
+        if self.cx > len(l) : self.cx = len(l)
+        self.lines[self.cy] = l[:self.cx] + self.ck + "'" + l[self.cx:]
+        self.cx += 1
 
 def rightparenfunc(self):
     l = self.lines[self.cy]
@@ -125,12 +142,17 @@ def ctrlspacefunc(self):
     else : self.isautocomp = False
 
 def ctrlvfunc(self):
-    r = tkinter.Tk()
-    s = r.clipboard_get()
+    fc = getclipboard()
+    
+    if self.localcpy == '' or self.foreigncpy != fc:
+        s = fc
+    else:
+        s = self.localcpy
+
+    s = stripln(s)
     s = s.replace('\t', ' ' * 4)
-    r.withdraw()
-    r.update()
-    r.destroy()
+    
+
     self.message = 'Pasting {} chars: {}...'.format(len(s),
                                                     s[:30].replace('\n', ' '))
     curline = self.lines[self.cy]
@@ -176,6 +198,7 @@ def ctrlkfunc(self):
 
 def ctrlpfunc(self):
     if self.mode != 'terminal':
+        self.save()
         self.message = 'Opened terminal'
         self.mode = 'terminal'
     else : self.mode = 'edit'
@@ -191,12 +214,7 @@ def ctrlqfunc(self):
 
 def ctrlxfunc(self):
     line = self.lines[self.cy]
-    r = tkinter.Tk()
-    r.withdraw()
-    r.clipboard_clear()
-    r.clipboard_append(line)
-    r.update() # now it stays on the clipboard after the window is closed
-    r.destroy()
+    copy(self, line)
     if len(self.lines) > 1:
         self.lines.pop(self.cy)
     else:
@@ -208,20 +226,31 @@ def ctrlrbfunc(self):
     self.cy = self.sy
     
 def ctrlbsfunc(self):
-    self.sy += self.edith
-    if self.sy > len(self.lines) - self.edith + 1:
-        self.sy = len(self.lines) - self.edith + 1
+    if len(self.lines) >= self.edith:
+        self.sy += self.edith
+        if self.sy > len(self.lines) - self.edith + 1:
+            self.sy = len(self.lines) - self.edith + 1
     self.cy = self.sy
 
 def ctrlcfunc(self):
     line = self.lines[self.cy]
-    r = tkinter.Tk()
-    r.withdraw()
-    r.clipboard_clear()
-    r.clipboard_append(line)
-    r.update() # now it stays on the clipboard after the window is closed
-    r.destroy()
-    self.message = 'Copied: {}...'.format(line[:30])
+    copy(self, line)
+    self.message = 'Copied: {}...'.format(line[:60])
+
+def ctrlafunc(self):
+    txt = '\n'.join(self.lines)
+    copyjava(txt)
+
+def ctrllfunc(self):
+    if self.cx > 0 : self.cx = 0
+    else:
+        l = len(self.lines[self.cy])
+        self.cx = l #if l > self.editw - 1 else self.editw - 1
+
+def ctrlffunc(self):
+    self.updatefilelist()
+    self.fi = 0
+    self.mode = 'fileselect'
 
 def altzfunc(self):
     self.showkeycodes = not self.showkeycodes
@@ -231,3 +260,43 @@ def defaultfunc(self):
     self.lines[self.cy] = l[:self.cx] + self.ck + l[self.cx:]
     self.cx += 1
 
+def copyjava(s):
+    owd = os.getcwd()
+    abspath = os.path.abspath(__file__)
+    dname = os.path.dirname(abspath)    
+    os.chdir(dname)
+    subprocess.Popen(['java', 'Copier', s], stdout=subprocess.PIPE)
+    os.chdir(owd)
+
+def getclipboard():
+    r = tkinter.Tk()
+    s = r.clipboard_get()
+    r.withdraw()
+    r.update()
+    r.destroy()
+    return s
+
+def copy(self, s):
+    self.localcpy = s
+    self.foreigncpy = getclipboard()
+
+def isint(s):
+    try:
+        int(s)
+        return True
+    except: return False
+
+def stripln(orig):
+    lines = orig.split('\n')
+    newlines = []
+    for line in lines:
+        pipepos = line.find('|')
+        if pipepos != -1:
+            if pipepos == 0 : newlines.append(line)
+            else:
+                num = line[:pipepos]
+                if isint(num.lstrip().replace(' ', 'a')):
+                    newlines.append(line[pipepos+1:])
+                else : newlines.append(line)
+        else : newlines.append(line)
+    return '\n'.join(newlines)
