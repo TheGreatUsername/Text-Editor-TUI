@@ -30,7 +30,7 @@ class terminal:
     def command(self, inpt):
         self.history.append(inpt)
         self.record += self.pref + inpt + '\n'
-        pref = 'source ~/.bash_profile && f="{}" && '.format(self.filename)
+        pref = 'source ~/.zprofile && f="{}" && '.format(self.filename)
         #if len(inpt) > 2 and inpt[:2] == './' : pref = ''
         try:
             out, err = execcommand(pref + inpt)
