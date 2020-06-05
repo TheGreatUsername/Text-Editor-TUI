@@ -3,6 +3,9 @@ import subprocess
 import textwrap
 from timeout import timeout
 
+#change this to your shell profile
+profile = '.zprofile'
+
 @timeout(5)
 def execcommand(s):
     process = subprocess.Popen(s, shell=True,
@@ -30,7 +33,7 @@ class terminal:
     def command(self, inpt):
         self.history.append(inpt)
         self.record += self.pref + inpt + '\n'
-        pref = 'source ~/.zprofile && f="{}" && '.format(self.filename)
+        pref = 'source ~/{} && f="{}" && '.format(profile, self.filename)
         #if len(inpt) > 2 and inpt[:2] == './' : pref = ''
         try:
             out, err = execcommand(pref + inpt)
